@@ -21,7 +21,7 @@ class STDINListenerThread(threading.Thread):
                 if line:
                     message_queue.put(("STDIN", line))
             except Exception as e:
-                print("Error reading from STDIN:", e)
+                print("Error reading from STDIN:", e, flush=True)
                 break
 
 class ConnectionHandlerThread(threading.Thread):
@@ -37,7 +37,7 @@ class ConnectionHandlerThread(threading.Thread):
                 message_queue.put(("SOCKET", data))
             self.conn.close()
         except Exception as e:
-            print("Error handling connection from", self.addr, ":", e)
+            print("Error handling connection from", self.addr, ":", e, flush=True)
 
 class SocketListenerThread(threading.Thread):
     def __init__(self, port):
@@ -50,7 +50,7 @@ class SocketListenerThread(threading.Thread):
             server_sock.bind(('0.0.0.0', self.port))
             server_sock.listen(5)
         except Exception as e:
-            print("Error setting up socket server:", e)
+            print("Error setting up socket server:", e, flush=True)
             sys.exit(1)
         while True:
             try:
@@ -58,7 +58,7 @@ class SocketListenerThread(threading.Thread):
                 handler = ConnectionHandlerThread(conn, addr)
                 handler.start()
             except Exception as e:
-                print("Error accepting connection:", e)
+                print("Error accepting connection:", e, flush=True)
 
 class SendingThread(threading.Thread):
     def __init__(self, node_id, neighbors, update_interval):
@@ -75,7 +75,7 @@ class SendingThread(threading.Thread):
     def run(self):
         while True:
             update_message = self.build_update_message()
-            print(update_message)
+            print(update_message, flush=True)
             for neigh_id, data in self.neighbors.items():
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -83,5 +83,5 @@ class SendingThread(threading.Thread):
                     s.sendall(update_message.encode())
                     s.close()
                 except Exception as e:
-                    print(f"Error sending update to {neigh_id} on port {data['port']}:", e)
+                    print(f"Error sending update to {neigh_id} on port {data['port']}:", e, flush=True)
             time.sleep(self.update_interval)

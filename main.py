@@ -139,4 +139,4 @@ END
 if __name__ == "__main__":
     main()
     # 如需执行自动化测试，可取消下面行的注释
-    testrun()
+    # testrun()

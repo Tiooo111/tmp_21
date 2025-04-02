@@ -12,10 +12,10 @@
             "program": "main.py",
             "console": "integratedTerminal",
             "args": [
-                "F", "6005",
-                "Fconfig.txt",
+                "A", "6000",
+                "Aconfig.txt",
+                "10",
                 "5",
-                "9",
             ], 
         }
     ]

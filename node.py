@@ -62,8 +62,6 @@ class NetworkNode:
                 line = self.readline()
                 if not line:
                     continue
-                # 正确写法：使用 sys.stderr.write，并使用 self.node_id
-                sys.stderr.write(f"{self.node_id} {line}\n")
                 sys.stderr.flush()
                 result = parse_command(line)
                 self.command_queue.put(result, block=False)

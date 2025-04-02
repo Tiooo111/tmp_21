@@ -2,16 +2,26 @@ import sys
 import os
 import re
 import copy
-from test import *
-from model import *
-from node import *
+from test import *      # 导入测试相关模块（用于自动化测试）
+from model import *     # 导入路由模型相关模块
+from node import *      # 导入网络节点相关模块
 
 def parse_arguments():
+    """
+    解析命令行参数，要求提供 5 个参数：
+      1. Node-ID：必须为单个大写字母
+      2. Port-NO：端口号，必须为整数
+      3. Node-Config-File：配置文件，必须存在
+      4. RoutingDelay：路由延时，浮点数
+      5. UpdateInterval：更新间隔，非负浮点数
+    若参数不足或格式不正确，则输出错误信息并退出。
+    """
     if len(sys.argv) != 6:
         print("Error: Insufficient arguments provided. Usage: ./Routing.sh <Node-ID> <Port-NO> <Node-Config-File> <RoutingDelay> <UpdateInterval>")
         sys.exit(1)
     
     node_id = sys.argv[1]
+    # 校验 Node-ID 是否为单个大写字母
     if not re.match("^[A-Z]$", node_id):
         print("Error: Invalid Node-ID.")
         sys.exit(1)
@@ -27,6 +37,7 @@ def parse_arguments():
         print(f"Error: Configuration file {config_file} not found.")
         sys.exit(1)
         
+    # 路由延时转换为浮点数
     routing_delay = float(sys.argv[4])
         
     try:
@@ -39,9 +50,13 @@ def parse_arguments():
     
     return node_id, port, config_file, routing_delay, update_interval
 
-import re
-
 def parse_command(line):
+    """
+    解析动态命令字符串，将其转换为字典格式，包含：
+      - command: 命令名称（如 UPDATE、CHANGE、FAIL、RECOVER、QUERY、MERGE、SPLIT、RESET、CYCLE DETECT、BATCH UPDATE）
+      - args: 命令参数列表
+    如果命令格式不符合预期，则打印错误信息并退出程序（退出码 2）。
+    """
     tokens = line.strip().split()
     if not tokens:
         return None
@@ -49,6 +64,10 @@ def parse_command(line):
     command = tokens[0]
     
     def check_node_id(node_id):
+        """
+        辅助函数：检查传入的 node_id 是否为单个大写字母。
+        不符合时打印错误并退出。
+        """
         if not re.match("^[A-Z]$", node_id):
             print("Error: Invalid command format. Expected a valid Node-ID.")
             exit(2)
@@ -86,12 +105,15 @@ def parse_command(line):
         return {'command': 'RECOVER', 'args': [tokens[1]]}
         
     elif command == "QUERY":
+        # 如果命令格式为 "QUERY <Destination>"
         if len(tokens) == 2:
             check_node_id(tokens[1])
             return {'command': 'QUERY', 'args': [tokens[1]]}
+        # 如果命令格式为 "QUERY PATH <Destination>"（只有一个目标）
         elif len(tokens) == 3 and tokens[1] == "PATH":
             check_node_id(tokens[2])
             return {'command': 'QUERY_PATH', 'args': [tokens[2]]}
+        # 如果命令格式为 "QUERY PATH <Source> <Destination>"
         elif len(tokens) == 4 and tokens[1] == "PATH":
             check_node_id(tokens[2])
             check_node_id(tokens[3])
@@ -137,6 +159,14 @@ def parse_command(line):
         exit(2)
 
 def parse_config_file(filename):
+    """
+    解析配置文件，构建初始邻居路由表。
+    配置文件格式：
+      - 第一行：邻居个数（整数）
+      - 后续每行：<Neighbor-ID> <Cost> <Port>
+    若文件格式错误，则打印错误信息并退出。
+    返回：字典，键为邻居节点的 ID，值为包含 cost、port 和 down 状态的字典
+    """
     table = {}
     with open(filename, 'r') as f:
         lines = f.readlines()
@@ -154,12 +184,14 @@ def parse_config_file(filename):
                 sys.exit(1)
                 
             try:
+                # 检查 cost 是否为浮点数
                 float(tokens[1])
             except ValueError:
                 print("Error: Invalid configuration file format.")
                 sys.exit(1)
                 
             try:
+                # 检查 port 是否为整数
                 int(tokens[2])
             except ValueError:
                 print("Error: Invalid configuration file format.")
@@ -173,13 +205,24 @@ def parse_config_file(filename):
 
 
 def main():
+    """
+    主函数：
+      1. 解析命令行参数
+      2. 解析配置文件构建初始路由表
+      3. 创建 NetworkNode 对象并启动其线程
+    """
     node_id, port, config_file, routing_delay, update_interval = parse_arguments()
     initial_table = parse_config_file(config_file)
+    # 这里深拷贝 initial_table 为 table（目的是为了后续独立操作）
     table = copy.deepcopy(initial_table)
     node = NetworkNode(node_id, port, table, routing_delay, update_interval)
     node.start()
     
 def testrun():
+    """
+    测试运行函数，利用 TestCase 执行预设测试用例。
+    测试用例包括节点初始化和动态命令测试。
+    """
     t = TestCase("""
 init: A X001 1 1
 1
@@ -200,5 +243,4 @@ END
 
 if __name__ == "__main__":
     main()
-    # testrun()
-
+    testrun()

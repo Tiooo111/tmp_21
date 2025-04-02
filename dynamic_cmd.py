@@ -8,71 +8,61 @@ def process_command(command, state):
         return
     cmd = tokens[0]
     if cmd == "CHANGE":
-        # 格式：CHANGE <NeighbourID> <NewCost>
         if len(tokens) != 3:
-            print("Error: Invalid command format. Expected exactly two tokens after CHANGE.")
+            print("Error: Invalid command format. Expected exactly two tokens after CHANGE.", flush=True)
             sys.exit(1)
         neigh = tokens[1]
         try:
             new_cost = float(tokens[2])
         except ValueError:
-            print("Error: Invalid command format. Expected numeric cost value.")
+            print("Error: Invalid command format. Expected numeric cost value.", flush=True)
             sys.exit(1)
         if neigh not in state["neighbors"]:
-            print("Error: Neighbour not found.")
+            print("Error: Neighbour not found.", flush=True)
             return
         state["neighbors"][neigh]['cost'] = new_cost
         state["graph"][state["node_id"]][neigh] = new_cost
         if neigh in state["graph"] and state["node_id"] in state["graph"][neigh]:
             state["graph"][neigh][state["node_id"]] = new_cost
-        print(f"Changed cost to neighbour {neigh} to {new_cost}")
-    elif cmd == "FAIL":
-        # 格式：FAIL <Node-ID>
-        if len(tokens) != 2:
-            print("Error: Invalid command format. Expected: FAIL <Node-ID>.")
-            sys.exit(1)
+    elif cmd in {"FAIL", "RECOVER"}:
+        # 检查 Node-ID 格式：必须是单个大写字母
+        if len(tokens) != 2 or len(tokens[1]) != 1 or not tokens[1].isupper():
+            print("Error: Invalid command format. Expected a valid Node-ID.", flush=True)
+            return
         target = tokens[1]
-        if target == state["node_id"]:
-            state["node_state"] = "DOWN"
-            print(f"Node {state['node_id']} is now DOWN.")
-        else:
-            if target in state["graph"]:
-                for neighbor in list(state["graph"][target].keys()):
-                    del state["graph"][neighbor][target]
-                del state["graph"][target]
-            print(f"Updated state: Node {target} failed.")
-    elif cmd == "RECOVER":
-        # 格式：RECOVER <Node-ID>
-        if len(tokens) != 2:
-            print("Error: Invalid command format. Expected: RECOVER <Node-ID>.")
-            sys.exit(1)
-        target = tokens[1]
-        if target == state["node_id"]:
-            state["node_state"] = "UP"
-            for neigh, data in state["original_neighbors"].items():
-                state["neighbors"][neigh] = data.copy()
-                state["graph"][state["node_id"]][neigh] = data['cost']
-                if neigh not in state["graph"]:
-                    state["graph"][neigh] = {}
-                state["graph"][neigh][state["node_id"]] = data['cost']
-            print(f"Node {state['node_id']} is now UP.")
-        else:
-            print(f"Updated state: Node {target} recovered.")
+        if cmd == "FAIL":
+            if target == state["node_id"]:
+                state["node_state"] = "DOWN"
+                print(f"Node {state['node_id']} is now DOWN.", flush=True)
+            else:
+                # 对于其他节点，仅更新状态
+                print(f"Updated state: Node {target} failed.", flush=True)
+        else:  # RECOVER
+            if target == state["node_id"]:
+                state["node_state"] = "UP"
+                for neigh, data in state["original_neighbors"].items():
+                    state["neighbors"][neigh] = data.copy()
+                    state["graph"][state["node_id"]][neigh] = data['cost']
+                    if neigh not in state["graph"]:
+                        state["graph"][neigh] = {}
+                    state["graph"][neigh][state["node_id"]] = data['cost']
+                print(f"Node {state['node_id']} is now UP.", flush=True)
+            else:
+                print(f"Updated state: Node {target} recovered.", flush=True)
     elif cmd == "QUERY":
-        # 格式：QUERY <Destination>
         if len(tokens) != 2:
-            print("Error: Invalid command format. Expected: QUERY <Destination>.")
+            print("Error: Invalid command format. Expected: QUERY <Destination>.", flush=True)
             sys.exit(1)
         dest = tokens[1]
         if dest not in state["graph"]:
-            print("Error: Destination not found.")
+            print("Error: Destination not found.", flush=True)
             return
         routing_table = compute_routing_table(state["graph"], state["node_id"])
         if dest in routing_table:
             path, cost = routing_table[dest]
-            print(f"Least cost path from {state['node_id']} to {dest}: {path}, link cost: {cost}")
+            print(f"Least cost path from {state['node_id']} to {dest}: {path}, link cost: {cost}", flush=True)
         else:
-            print(f"Destination {dest} unreachable from {state['node_id']}.")
+            print(f"Destination {dest} unreachable from {state['node_id']}.", flush=True)
     elif cmd == "QUERY_PATH":
         # 格式：QUERY PATH <Source> <Destination>
         if len(tokens) != 3:

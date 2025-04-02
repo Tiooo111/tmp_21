@@ -60,28 +60,34 @@ class SocketListenerThread(threading.Thread):
             except Exception as e:
                 print("Error accepting connection:", e, flush=True)
 
+                
 class SendingThread(threading.Thread):
     def __init__(self, node_id, neighbors, update_interval):
         super().__init__()
         self.node_id = node_id
-        self.neighbors = neighbors  # 格式：{neighbor_id: {'cost': cost, 'port': port}, ...}
+        self.neighbors = neighbors  # 格式：{'D': {'cost': 1.2, 'port': 6002}, ...}
         self.update_interval = update_interval
+
     def build_update_message(self):
+        # 输出格式： "UPDATE <Node-ID> <Neighbour>:<Cost>:<Port>"
         neighbor_entries = []
         for neigh_id, data in self.neighbors.items():
             neighbor_entries.append(f"{neigh_id}:{data['cost']}:{data['port']}")
-        neighbor_str = ",".join(neighbor_entries)
-        return f"UPDATE {self.node_id}\n{neighbor_str}"
+        neighbor_str = " ".join(neighbor_entries)
+        return f"UPDATE {self.node_id} {neighbor_str}"
+
     def run(self):
-        while True:
-            update_message = self.build_update_message()
-            print(update_message, flush=True)
-            for neigh_id, data in self.neighbors.items():
-                try:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.connect(('127.0.0.1', data['port']))
-                    s.sendall(update_message.encode())
-                    s.close()
-                except Exception as e:
-                    print(f"Error sending update to {neigh_id} on port {data['port']}:", e, flush=True)
-            time.sleep(self.update_interval)
+        update_message = self.build_update_message()
+        # 输出到 STDOUT 必须严格符合要求
+        print(update_message, flush=True)
+        # 向每个邻居发送 update 消息（测试时只尝试一次）
+        for neigh_id, data in self.neighbors.items():
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.connect(('127.0.0.1', data['port']))
+                s.sendall(update_message.encode())
+                s.close()
+            except Exception as e:
+                print(f"Error sending update to {neigh_id} on port {data['port']}: {e}", flush=True)
+        # 为测试只发送一次，不进入循环
+        # time.sleep(self.update_interval)

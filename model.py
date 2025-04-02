@@ -267,7 +267,11 @@ class DVModel:
         node_id, new_routes = self.parse_update(args)
         if node_id in self.routing_tables:
             old_update = self.generate_update(node_id)
-            new_update = f"UPDATE {node_id} {','.join(f'{dest}:{info['cost']}:{info['port']}' for dest, info in sorted(new_routes.items()))}"
+            new_update = f"UPDATE {node_id}"
+            new_update = f"UPDATE {node_id}"
+            for dest, info in sorted(new_routes.items()):
+                new_update += f"{dest}:{info['cost']}:{info['port']},"
+            new_update = new_update[:-1]
             
             if old_update == new_update:
                 return

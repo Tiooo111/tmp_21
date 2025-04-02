@@ -31,8 +31,8 @@ class NetworkNode:
 
         
     
-    def readline(self):
-        return self.input_queue.get()
+    # def readline(self):
+    #     return self.input_queue.get()
     
     def push_input(self, line):
         self.input_queue.put(line)
